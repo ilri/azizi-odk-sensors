@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Azizi ODK Sensors</string>
+    <string name="available_devices">Available Devices</string>
+    <string name="action_settings">Settings</string>
+    <string name="bluetooth_was_not_enabled">Bluetooth was not enabled</string>
+    <string name="scanning">Scanning</string>
+    <string name="not_scanning">Not Scanning</string>
+    <string name="scan">Scan</string>
+    <string name="socket_initialised_for">Socket initiated for </string>
+    <string name="connected_to">Connected to </string>
+    <string name="gotten_data_from">Gotten data from </string>
+    <string name="closed_socket_with">Closed socket with </string>
+    <string name="device_not_paired">Device is not paired</string>
+    <string name="scan_again">Please scan again for confirmation</string>
+</resources>
