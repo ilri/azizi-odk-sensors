@@ -17,11 +17,14 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import org.cgiar.ilri.odk.sensors.handlers.BluetoothHandler;
+import org.cgiar.ilri.odk.sensors.types.RFID;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Created by Jason Rogena (j.rogena@cgiar.org) on 3rd June 2014
+ */
 public class MainActivity
         extends Activity
         implements BluetoothHandler.DeviceFoundListener,
@@ -29,6 +32,16 @@ public class MainActivity
                     BluetoothHandler.BluetoothSessionListener{
 
     private static String TAG = "ODK Sensors Main Activity";
+    private static String KEY_SENSOR = "sensor";
+    /*
+    Supported sensors include
+        - bluetooth
+     */
+    private static String KEY_DATA_TYPE = "data_type";
+    /*
+    Supported data types include
+        - rfid
+     */
 
     private ListView devicesLV;
 
@@ -36,6 +49,8 @@ public class MainActivity
 
     private List<String> deviceNames;
     private List<BluetoothDevice> bluetoothDevices;
+    private String sensorToUse;
+    private String returnDataType;
 
     private ProgressDialog progressDialog;
 
@@ -57,6 +72,19 @@ public class MainActivity
         devicesLV.setAdapter(deviceArrayAdapter);
         devicesLV.setOnItemClickListener(this);
 
+        Bundle bundle = this.getIntent().getExtras();
+        if(bundle != null){
+            sensorToUse = bundle.getString(KEY_SENSOR);
+            if(sensorToUse != null) sensorToUse = sensorToUse.toLowerCase();
+
+            returnDataType = bundle.getString(KEY_DATA_TYPE);
+            if(returnDataType != null) returnDataType = returnDataType.toLowerCase();
+
+            Log.i(TAG, "Gotten data from parent activity");
+        }
+        else{
+            Log.w(TAG, "Was unable to get data from previous activity. Probably because the activity was called from the launcher");
+        }
         Log.i(TAG, "onCreated finished");
     }
 
@@ -279,7 +307,7 @@ public class MainActivity
      * @param adapterView The parent view eg ListView of which view is a child of
      * @param view The child view clicked in adapterView
      * @param i Index of view in AdapterView
-     * @param l
+     * @param l Row id of the view in the parent
      */
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -392,13 +420,33 @@ public class MainActivity
                     }
                     else{//activity called by odk
                         Log.i(TAG, "Activity called by "+MainActivity.this.getCallingActivity().getClassName() + " sending message there");
+
                         Intent intent = new Intent();
                         /*
                             "value" on the next line is specific to ODK, If you use anything else, ODK will not insert the message into the textfield
                             Refer to http://opendatakit.org/help/form-design/external-apps/
                          */
-                        intent.putExtra("value", message);
-                        setResult(RESULT_OK, intent);
+
+                        if(returnDataType != null){
+                            if(returnDataType.equals(RFID.KEY)){
+                                String value = RFID.process(message);
+                                intent.putExtra("value", value);
+                                setResult(RESULT_OK, intent);
+                            }
+                            else{
+                                setResult(RESULT_CANCELED, intent);
+
+                                Log.e(TAG, "Was unable to determine the return data type returning nothing");
+                                Toast.makeText(MainActivity.this, MainActivity.this.getResources().getString(R.string.something_wrong_odk), Toast.LENGTH_LONG).show();
+                            }
+                        }
+                        else{
+                            setResult(RESULT_CANCELED, intent);
+
+                            Log.e(TAG, "The return data type is null. Probably because ODK form did not provide activity with one");
+                            Toast.makeText(MainActivity.this, MainActivity.this.getResources().getString(R.string.something_wrong_odk), Toast.LENGTH_LONG).show();
+                        }
+
                         finish();
                     }
                 }

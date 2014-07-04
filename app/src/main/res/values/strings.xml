@@ -14,4 +14,5 @@
     <string name="closed_socket_with">Closed socket with </string>
     <string name="device_not_paired">Device is not paired</string>
     <string name="scan_again">Please scan again for confirmation</string>
+    <string name="something_wrong_odk">ODK did not provide the value for the \'data_type\' variable</string>
 </resources>

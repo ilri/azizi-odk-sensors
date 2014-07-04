@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Created by Jason Rogena on 03rd June 2014.
+ * Created by Jason Rogena (j.rogena@cgiar.org) on 3rd June 2014.
  *
  * Refer to http://developer.android.com/guide/topics/connectivity/bluetooth.html
  * for further reference
@@ -29,6 +29,7 @@ import java.util.UUID;
 public class BluetoothHandler {
 
     public static final int REQUEST_ENABLE_BT = 3321;
+    public static final String KEY = "bluetooth";
 
     private static final String TAG = "ODK Sensors BluetoothHandler";
 
