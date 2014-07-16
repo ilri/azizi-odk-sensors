@@ -1,8 +1,4 @@
-# Azizi ODK Tools
-This application holds tools to be used by ODK Collect on Android. Tools so far include
-
-
-## 1. Sensor Tool
+# Azizi ODK Sensors
 This tool can be used by ODK Collect to enter data from bluetoot devices into text fields.
 Refer to [ODK External Apps](http://opendatakit.org/help/form-design/external-apps/).
 
@@ -12,7 +8,7 @@ This tool has been tested using the following devices:
 *   Allflex RS320-3-6 ISO RFID Stick Reader
 
 
-### Usage
+## Usage
 This tool can be used by ODK collect by calling it using and intent. As of now the intent is:
 
     org.cgiar.ilri.odk.sensors.action.GET_SENSOR_DATA(sensor='bluetooth', data_types='rfid')

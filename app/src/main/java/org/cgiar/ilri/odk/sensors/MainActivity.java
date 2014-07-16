@@ -3,6 +3,7 @@ package org.cgiar.ilri.odk.sensors;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -331,6 +332,19 @@ public class MainActivity
         }
     }
 
+    private void setProgressDialogDismissListener(ProgressDialog progressDialog, final BluetoothDevice bluetoothDevice, final BluetoothHandler.BluetoothSessionListener sessionListener){
+
+        if(progressDialog != null){
+
+            progressDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialogInterface) {
+                    bluetoothHandler.closeSocket(bluetoothDevice, sessionListener);
+                }
+            });
+        }
+    }
+
     /**
      * This method is called when BluetoothHandler is able to connect to a bluetooth device
      * @param device The device connected to
@@ -341,11 +355,13 @@ public class MainActivity
             @Override
             public void run() {
                 if (progressDialog == null) {
-                    progressDialog = ProgressDialog.show(MainActivity.this, "", getResources().getString(R.string.connected_to) + " " + device.getName());
+                    progressDialog = ProgressDialog.show(MainActivity.this, "", getResources().getString(R.string.connected_to) + " " + device.getName() + ". " + getResources().getString(R.string.scan), true, true);
                 } else {
                     progressDialog.setMessage(getResources().getString(R.string.connected_to) + device.getName());
                     progressDialog.show();
                 }
+
+                setProgressDialogDismissListener(progressDialog, device, MainActivity.this);
             }
         });
     }
@@ -361,7 +377,7 @@ public class MainActivity
             @Override
             public void run() {
                 if(progressDialog == null){
-                    progressDialog = ProgressDialog.show(MainActivity.this, "",getResources().getString(R.string.socket_initialised_for) + " " + device.getName());
+                    progressDialog = ProgressDialog.show(MainActivity.this, "",getResources().getString(R.string.socket_initialised_for) + " " + device.getName(), true, true);
                 }
                 else{
                     progressDialog.setMessage(getResources().getString(R.string.connected_to) + device.getName());
@@ -385,12 +401,14 @@ public class MainActivity
             @Override
             public void run() {
                 if(progressDialog == null){
-                    progressDialog = ProgressDialog.show(MainActivity.this, "",getResources().getString(R.string.scan_again));
+                    progressDialog = ProgressDialog.show(MainActivity.this, "",getResources().getString(R.string.scan_again), true, true);
                 }
                 else{
                     progressDialog.setMessage(getResources().getString(R.string.scan_again));
                     progressDialog.show();
                 }
+
+                setProgressDialogDismissListener(progressDialog, device, MainActivity.this);
             }
         });
     }

@@ -38,6 +38,9 @@ public class BluetoothHandler {
     private final BroadcastReceiver broadcastReceiver;
     private final List<BluetoothDevice> availableDevices;
     private final DeviceFoundListener deviceFoundListener;
+    private BluetoothSocket bluetoothSocket;//There should only be one bluetooth socket open
+    private InputStream bluetoothInputStream;//bluetooth socket's input stream
+    private OutputStream bluetoothOutputStream;//bluetooth socket's output stream
 
     /**
      * The constructor. If you don't know about constructors, well.., take more programming lessons then
@@ -238,6 +241,7 @@ public class BluetoothHandler {
 
             AsClientConnectionThread clientConnectionThread = new AsClientConnectionThread(device, sessionListener);
             clientConnectionThread.run();
+            return true;
         }
         else{
             Log.w(TAG, "The bluetooth device provided to initiateConnectionAsClient is null. initiateConnectionAsClient returning false");
@@ -249,7 +253,6 @@ public class BluetoothHandler {
      * This class initialises a synchronous thread that does the connection to the bluetooth device and opens up the socket
      */
     private class AsClientConnectionThread extends Thread {
-        private final BluetoothSocket socket;
         private final BluetoothDevice device;
         private final BluetoothSessionListener sessionListener;
 
@@ -273,7 +276,9 @@ public class BluetoothHandler {
                 e.printStackTrace();
             }
 
-            socket = tmpSocket;
+            closeSocket(null, null);//Close any previous lingering socket, if any
+
+            bluetoothSocket = tmpSocket;
             sessionListener.onSocketOpened(device);
         }
 
@@ -288,18 +293,19 @@ public class BluetoothHandler {
             super.run();
 
             stopScan();//Stop scan (in case the user started it again after getDataFromDevice was called)
+
             try {
-                socket.connect();//This right here blocks the thread until a connection is gotten or a timeout is reached
+                bluetoothSocket.connect();//This right here blocks the thread until a connection is gotten or a timeout is reached
                 sessionListener.onConnected(device);
 
-                getData(device, socket, sessionListener);
+                getData(device, sessionListener);
             }
             catch (IOException e){
                 Log.e(TAG, "Was unable to connect to socket with Bluetooth server in AsClientConnectionThread");
                 e.printStackTrace();
 
                 try {
-                    socket.close();
+                    bluetoothSocket.close();
                 }
                 catch (IOException closeE){
                     Log.e(TAG, "Was unable to close bluetooth socket with Bluetooth server in AsClientConnectionThread");
@@ -313,11 +319,10 @@ public class BluetoothHandler {
      * This method initiated the process of getting the actual data from the bluetooth device
      *
      * @param device The device to get data from
-     * @param socket The socket to use to get the data
      * @param sessionListener The session listener being used by the UI thread to receive updates
      */
-    private void getData(BluetoothDevice device, BluetoothSocket socket, BluetoothSessionListener sessionListener){
-        TransferThread transferThread = new TransferThread(device, socket, sessionListener);
+    private void getData(BluetoothDevice device, BluetoothSessionListener sessionListener){
+        TransferThread transferThread = new TransferThread(device, sessionListener);
         transferThread.run();
     }
 
@@ -326,38 +331,32 @@ public class BluetoothHandler {
      */
     private class TransferThread extends Thread {
         private final BluetoothDevice device;
-        private final BluetoothSocket socket;
-
-        private final InputStream inputStream;
-        private final OutputStream outputStream;//not used as of now
         private final BluetoothSessionListener sessionListener;
 
         /**
          * The constructor.
          *
          * @param device The device to get data from
-         * @param socket The socket to use to get the data
          * @param sessionListener The session listener being used by the UI thread to receive updates
          */
-        public TransferThread(BluetoothDevice device, BluetoothSocket socket, BluetoothSessionListener sessionListener){
+        public TransferThread(BluetoothDevice device, BluetoothSessionListener sessionListener){
             this.device = device;
-            this.socket = socket;
             this.sessionListener = sessionListener;
 
-            InputStream inputStream = null;
-            OutputStream outputStream = null;
+            InputStream bluetoothInputStream = null;
+            OutputStream bluetoothOutputStream = null;
 
             try{
-                inputStream = socket.getInputStream();
-                outputStream = socket.getOutputStream();
+                bluetoothInputStream = bluetoothSocket.getInputStream();
+                bluetoothOutputStream = bluetoothSocket.getOutputStream();
             }
             catch (IOException e){
                 Log.e(TAG, "IOException thrown while tying to create an input and output stream to bluetooth device");
                 e.printStackTrace();
             }
 
-            this.inputStream = inputStream;
-            this.outputStream = outputStream;
+            BluetoothHandler.this.bluetoothInputStream = bluetoothInputStream;
+            BluetoothHandler.this.bluetoothOutputStream = bluetoothOutputStream;
         }
 
         /**
@@ -370,27 +369,11 @@ public class BluetoothHandler {
         public void run() {
             super.run();
 
-            String message = convertStreamToString(inputStream);//this method will block the thread until something is gotten
+            String message = convertStreamToString(bluetoothInputStream);//this method will block the thread until something is gotten
 
             sessionListener.onActualMessageGotten(device, message);
 
-            closeSocket();
-        }
-
-        /**
-         * This method closes the socket to the bluetooth device.
-         * Make sure it's called after the InputStream and OutputStream are closed
-         */
-        private void closeSocket(){
-            try{
-                socket.close();
-                sessionListener.onSocketClosed(device);
-                Log.i(TAG, "Bluetooth socket successfully closed");
-            }
-            catch (Exception e){
-                Log.e(TAG, "Something went wrong while trying to close the bluetooth socket with device");
-                e.printStackTrace();
-            }
+            closeSocket(device, sessionListener);
         }
 
         /**
@@ -431,7 +414,7 @@ public class BluetoothHandler {
                     }
                 }
 
-                inputStream.close();
+                //inputStream.close();
 
                 return line;
             }
@@ -440,6 +423,38 @@ public class BluetoothHandler {
             }
 
             return null;
+        }
+    }
+
+    /**
+     * This method closes the socket to the bluetooth device.
+     * Make sure it's called after the InputStream and OutputStream are closed
+     */
+    public void closeSocket(BluetoothDevice device, BluetoothSessionListener sessionListener){
+        try{
+            if(bluetoothInputStream != null) {
+                bluetoothInputStream.close();
+                bluetoothInputStream = null;
+            }
+
+            if(bluetoothOutputStream != null){
+                bluetoothOutputStream.close();
+                bluetoothOutputStream = null;
+            }
+
+            if(bluetoothSocket != null) {
+                bluetoothSocket.close();
+                bluetoothSocket = null;
+            }
+
+            if(sessionListener !=null && device != null) {
+                sessionListener.onSocketClosed(device);
+            }
+            Log.i(TAG, "Bluetooth socket successfully closed");
+        }
+        catch (Exception e){
+            Log.e(TAG, "Something went wrong while trying to close the bluetooth socket with device");
+            e.printStackTrace();
         }
     }
 
