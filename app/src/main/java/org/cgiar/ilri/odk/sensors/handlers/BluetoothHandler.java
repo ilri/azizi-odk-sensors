@@ -305,7 +305,9 @@ public class BluetoothHandler {
                 e.printStackTrace();
 
                 try {
-                    bluetoothSocket.close();
+                    if(bluetoothSocket != null){
+                        bluetoothSocket.close();
+                    }
                 }
                 catch (IOException closeE){
                     Log.e(TAG, "Was unable to close bluetooth socket with Bluetooth server in AsClientConnectionThread");
@@ -477,6 +479,19 @@ public class BluetoothHandler {
         void onFirstMessageGotten(BluetoothDevice device);
         void onActualMessageGotten(BluetoothDevice device, String message);
         void onSocketClosed(BluetoothDevice device);
+    }
+
+    /**
+     * This method checks whether there is an active bluetooth socket.
+     * Note that this assumes that only one socket object is used in this class
+     *
+     * @return True if there is an active socket
+     */
+    public boolean isSocketActive(){
+        if(bluetoothSocket == null){
+            return false;
+        }
+        else return true;
     }
 
 }

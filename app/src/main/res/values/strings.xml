@@ -8,6 +8,7 @@
     <string name="scanning">Scanning</string>
     <string name="not_scanning">Not Scanning</string>
     <string name="scan">Scan</string>
+    <string name="scan_using">Scan using</string>
     <string name="socket_initialised_for">Socket initiated for </string>
     <string name="connected_to">Connected to </string>
     <string name="gotten_data_from">Gotten data from </string>
@@ -15,4 +16,8 @@
     <string name="device_not_paired">Device is not paired</string>
     <string name="scan_again">Please scan again for confirmation</string>
     <string name="something_wrong_odk">ODK did not provide the value for the \'data_type\' variable</string>
+    <string name="make_sure_devices_bluetooth_on">Searching... Make sure the scanner\'s bluetooth is on</string>
+    <string name="no_device_found">No paired scanner was found</string>
+    <string name="please_wait">Please wait...</string>
+    <string name="no_message_received_from_">No message received from</string>
 </resources>

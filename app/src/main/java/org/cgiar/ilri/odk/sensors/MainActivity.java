@@ -5,16 +5,23 @@ import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.cgiar.ilri.odk.sensors.handlers.BluetoothHandler;
@@ -45,6 +52,10 @@ public class MainActivity
      */
 
     private ListView devicesLV;
+    private ScrollView mainLayoutSV;
+    private LinearLayout childLayoutLL;
+    private LinearLayout dialogMainLayout;
+    private TextView dialogTextTV;
 
     private BluetoothHandler bluetoothHandler;
 
@@ -64,9 +75,13 @@ public class MainActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        //requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.activity_main);
+
+        mainLayoutSV = (ScrollView)findViewById(R.id.main_layout_sv);
+        childLayoutLL = (LinearLayout)findViewById(R.id.child_layout_ll);
 
         devicesLV = (ListView) this.findViewById(R.id.devices_lv);
         ArrayAdapter<String> deviceArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, new ArrayList<String>());
@@ -108,6 +123,10 @@ public class MainActivity
             Log.i(TAG, "Bluetooth Handler is not null, not reinitializing it");
         }
 
+        if(isChildActivity()){
+            setDialogMode();
+        }
+
         Log.i(TAG, "onResume finished");
     }
 
@@ -126,6 +145,41 @@ public class MainActivity
         if(progressDialog != null) progressDialog.dismiss();
         progressDialog = null;
         Log.i(TAG, "onPause finished");
+    }
+
+    /**
+     * This method updates the activity's theme to look like a dialog
+     */
+    private void setDialogMode() {
+        //MainActivity.this.setTheme(R.style.AppTheme_Transparent);
+        //getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        //mainLayoutSV.setBackgroundColor(getResources().getColor(R.color.transparent));
+        //childLayoutLL.setBackgroundColor(getResources().getColor(R.color.transparent));
+
+        //setTheme(R.style.DialogTheme);
+        //requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        Display display = getWindowManager().getDefaultDisplay();
+        Point displaySize = new Point();
+        display.getSize(displaySize);
+
+        mainLayoutSV.setVisibility(ScrollView.GONE);
+        dialogMainLayout = new LinearLayout(this);
+        dialogMainLayout.setOrientation(LinearLayout.HORIZONTAL);
+        dialogMainLayout.setBackgroundColor(Color.WHITE);
+        dialogMainLayout.setGravity(Gravity.CENTER);
+        dialogMainLayout.setPadding(10,5,10,10);
+
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams((int)(displaySize.x * 0.9), 200);
+        dialogTextTV = new TextView(this);
+        dialogTextTV.setGravity(Gravity.CENTER);
+        dialogMainLayout.addView(dialogTextTV);
+        dialogTextTV.setTextSize(16);
+        dialogTextTV.setTextColor(Color.BLACK);
+
+        addContentView(dialogMainLayout, layoutParams);
+
+        initBluetoothSearch();
     }
 
     /**
@@ -168,6 +222,22 @@ public class MainActivity
         return super.onOptionsItemSelected(item);
     }
 
+    private void updateProgressDialog(String message){
+        if(isChildActivity()){
+            dialogTextTV.setText(message);
+        }
+        else {
+            if (progressDialog == null) {
+                progressDialog = ProgressDialog.show(MainActivity.this, null, message, true, true);
+                setProgressDialogDismissListener(progressDialog, null, MainActivity.this);
+            }
+            else {
+                progressDialog.setMessage(message);
+                progressDialog.show();
+            }
+        }
+    }
+
     /**
      * This method is called when Bluetooth Handler starts scanning for devices
      */
@@ -180,6 +250,11 @@ public class MainActivity
             public void run() {
                 //show the spinning thingy on the action bar
                 setProgressBarIndeterminateVisibility(Boolean.TRUE);
+
+                if (isChildActivity()) {
+                    //show dialog for scanning
+                    updateProgressDialog(getResources().getString(R.string.make_sure_devices_bluetooth_on));
+                }
             }
         });
     }
@@ -191,29 +266,38 @@ public class MainActivity
      */
     @Override
     public void onDeviceFound(BluetoothDevice device) {
-        Log.i(TAG, "onDeviceFound called. New device is : "+device.getName());
+        Log.i(TAG, "onDeviceFound called. New device is : " + device.getName());
 
-        //Get all the found devices so far
-        List<BluetoothDevice> availableDevices = bluetoothHandler.getAvailableDevices();
-        if(availableDevices != null){
-            deviceNames = new ArrayList<String>(availableDevices.size());
-            bluetoothDevices = new ArrayList<BluetoothDevice>(availableDevices.size());
-
-            for(int index = 0; index < availableDevices.size(); index++){
-                BluetoothDevice currDevice = availableDevices.get(index);
-
-                deviceNames.add(currDevice.getName());
-                bluetoothDevices.add(currDevice);// use this instead of bluetoothDevices = bluetoothHandler.getAvailableDevices() to avoid passing by reference
+        if(isChildActivity()){
+            if(bluetoothHandler.isDevicePaired(device)){
+                BluetoothSocketThread bluetoothSocketThread = new BluetoothSocketThread();
+                bluetoothSocketThread.execute(device);
             }
-
-            //repopulate the devices list view
-            ((ArrayAdapter)devicesLV.getAdapter()).clear();
-            ((ArrayAdapter)devicesLV.getAdapter()).addAll(deviceNames);
-            ((ArrayAdapter)devicesLV.getAdapter()).notifyDataSetChanged();
         }
         else{
-            Log.w(TAG, "Returned Available device list from bluetooth handler is null ");
+            //Get all the found devices so far
+            List<BluetoothDevice> availableDevices = bluetoothHandler.getAvailableDevices();
+            if(availableDevices != null){
+                deviceNames = new ArrayList<String>(availableDevices.size());
+                bluetoothDevices = new ArrayList<BluetoothDevice>(availableDevices.size());
+
+                for(int index = 0; index < availableDevices.size(); index++){
+                    BluetoothDevice currDevice = availableDevices.get(index);
+
+                    deviceNames.add(currDevice.getName());
+                    bluetoothDevices.add(currDevice);// use this instead of bluetoothDevices = bluetoothHandler.getAvailableDevices() to avoid passing by reference
+                }
+
+                //repopulate the devices list view
+                ((ArrayAdapter)devicesLV.getAdapter()).clear();
+                ((ArrayAdapter)devicesLV.getAdapter()).addAll(deviceNames);
+                ((ArrayAdapter)devicesLV.getAdapter()).notifyDataSetChanged();
+            }
+            else{
+                Log.w(TAG, "Returned Available device list from bluetooth handler is null ");
+            }
         }
+
     }
 
     /**
@@ -226,6 +310,25 @@ public class MainActivity
             public void run() {
                 //hide the spinning thingy in the action bar
                 setProgressBarIndeterminateVisibility(Boolean.FALSE);
+
+                if(isChildActivity()){
+                    if(!bluetoothHandler.isSocketActive()){//if not connected to a device, take back to parent activity
+                        //wait for socket to fully initialize
+                        try {
+                            Thread.sleep(2000);
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        if(!bluetoothHandler.isSocketActive()){//if there is still no active connection, give up
+                            Toast.makeText(MainActivity.this, getResources().getString(R.string.no_device_found), Toast.LENGTH_LONG).show();
+                            Intent intent = new Intent();
+                            setResult(RESULT_CANCELED, intent);
+                            finish();
+                        }
+                    }
+                }
             }
         });
     }
@@ -299,6 +402,7 @@ public class MainActivity
      */
     private void stopBluetoothHandler(){
         bluetoothHandler.stopScan();
+        bluetoothHandler.closeSocket(null, null);//close any hanging socket
         bluetoothHandler.unregisterReceiver();
     }
 
@@ -339,7 +443,20 @@ public class MainActivity
             progressDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override
                 public void onDismiss(DialogInterface dialogInterface) {
-                    bluetoothHandler.closeSocket(bluetoothDevice, sessionListener);
+                    if(bluetoothHandler != null) {
+                        bluetoothHandler.closeSocket(bluetoothDevice, sessionListener);
+                    }
+                    else {
+                        Log.w(TAG, "Bluetooth Handler is null. Might mean that the dialog's onDismiss was called after the handler was deconstructed");
+                    }
+
+                    if(isChildActivity()){
+                        //TODO: if activity is child, return null to parent activity
+                        Intent intent = new Intent();
+                        setResult(RESULT_CANCELED, intent);
+
+                        finish();
+                    }
                 }
             });
         }
@@ -354,14 +471,7 @@ public class MainActivity
         this.runOnUiThread(new Runnable() {//Used in case the method is called from a thread that is not the UI thread
             @Override
             public void run() {
-                if (progressDialog == null) {
-                    progressDialog = ProgressDialog.show(MainActivity.this, "", getResources().getString(R.string.connected_to) + " " + device.getName() + ". " + getResources().getString(R.string.scan), true, true);
-                } else {
-                    progressDialog.setMessage(getResources().getString(R.string.connected_to) + device.getName());
-                    progressDialog.show();
-                }
-
-                setProgressDialogDismissListener(progressDialog, device, MainActivity.this);
+                updateProgressDialog(getResources().getString(R.string.scan_using) + " " + device.getName());
             }
         });
     }
@@ -376,13 +486,7 @@ public class MainActivity
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(progressDialog == null){
-                    progressDialog = ProgressDialog.show(MainActivity.this, "",getResources().getString(R.string.socket_initialised_for) + " " + device.getName(), true, true);
-                }
-                else{
-                    progressDialog.setMessage(getResources().getString(R.string.connected_to) + device.getName());
-                    progressDialog.show();
-                }
+                updateProgressDialog(getResources().getString(R.string.connected_to) + " " + device.getName() + ". " + getResources().getString(R.string.please_wait));
             }
         });
     }
@@ -400,17 +504,20 @@ public class MainActivity
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(progressDialog == null){
-                    progressDialog = ProgressDialog.show(MainActivity.this, "",getResources().getString(R.string.scan_again), true, true);
-                }
-                else{
-                    progressDialog.setMessage(getResources().getString(R.string.scan_again));
-                    progressDialog.show();
-                }
-
-                setProgressDialogDismissListener(progressDialog, device, MainActivity.this);
+                updateProgressDialog(getResources().getString(R.string.scan_again));
             }
         });
+    }
+
+    /**
+     * This method checks whether this activity has been called as a child activity by ODK
+     * or if called from the launcher
+     *
+     * @return True if the activity was called as a child activity
+     */
+    private boolean isChildActivity(){
+        if(MainActivity.this.getCallingActivity() == null) return false;
+        else return true;
     }
 
     /**
@@ -432,7 +539,7 @@ public class MainActivity
                     Log.d(TAG, "Message from "+device.getName()+" is "+message);
 
                     //Test whether the activity was called from the launcher or by ODK Collect as a sub activity
-                    if(MainActivity.this.getCallingActivity() == null){//activity called from the launcher
+                    if(!isChildActivity()){//activity called from the launcher
                         Toast.makeText(MainActivity.this, "Message from "+device.getName()+" is " + message + ". App not called by other app", Toast.LENGTH_LONG).show();
                         Log.i(TAG, "Activity not called by another activity. Result just displayed");
                     }
@@ -469,7 +576,7 @@ public class MainActivity
                     }
                 }
                 else {
-                    Toast.makeText(MainActivity.this, "Message from "+device.getName()+" is null ", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, getResources().getString(R.string.no_message_received_from_) + " " + device.getName(), Toast.LENGTH_LONG).show();
                     Log.w(TAG, "Message from " + device.getName() + " is null");
                 }
             }
@@ -486,7 +593,8 @@ public class MainActivity
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this, getResources().getString(R.string.closed_socket_with)+ " " + device.getName(), Toast.LENGTH_LONG).show();
+                Log.i(TAG, "Socket connection with " + device.getName() + " closed");
+                //Toast.makeText(MainActivity.this, getResources().getString(R.string.closed_socket_with)+ " " + device.getName(), Toast.LENGTH_LONG).show();
             }
         });
     }
