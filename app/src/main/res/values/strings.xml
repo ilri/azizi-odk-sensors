@@ -27,4 +27,5 @@
     <string name="pref_bt_rfid_default_dev_text">Select the default RFID device</string>
     <string name="pref_bt_rfid_default_dev_summary">Selecting a default device will make the app work faster</string>
     <string name="none">None</string>
+    <string name="unable_to_connect_to_">Unable to connect to</string>
 </resources>

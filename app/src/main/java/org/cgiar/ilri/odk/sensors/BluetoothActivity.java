@@ -120,7 +120,6 @@ public class BluetoothActivity
         super.onPause();
 
         stopBluetoothHandler();
-        bluetoothHandler = null;
 
         if(progressDialog != null) progressDialog.dismiss();
         progressDialog = null;
@@ -256,17 +255,16 @@ public class BluetoothActivity
                 //hide the spinning thingy in the action bar
                 setProgressBarIndeterminateVisibility(Boolean.FALSE);
 
-                if(isChildActivity()){
-                    if(!bluetoothHandler.isSocketActive()){//if not connected to a device, take back to parent activity
+                if (isChildActivity()) {
+                    if (!bluetoothHandler.isSocketActive()) {//if not connected to a device, take back to parent activity
                         //wait for socket to fully initialize
                         try {
                             Thread.sleep(2000);
-                        }
-                        catch (InterruptedException e) {
+                        } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
 
-                        if(!bluetoothHandler.isSocketActive()){//if there is still no active connection, give up
+                        if (!bluetoothHandler.isSocketActive()) {//if there is still no active connection, give up
                             Toast.makeText(BluetoothActivity.this, getResources().getString(R.string.no_device_found), Toast.LENGTH_LONG).show();
                             Intent intent = new Intent();
                             setResult(RESULT_CANCELED, intent);
@@ -365,6 +363,8 @@ public class BluetoothActivity
         bluetoothHandler.stopScan();
         bluetoothHandler.closeSocket(null, null);//close any hanging socket
         bluetoothHandler.unregisterReceiver();
+
+        bluetoothHandler = null;
     }
 
     private void setProgressDialogDismissListener(ProgressDialog progressDialog, final BluetoothDevice bluetoothDevice, final BluetoothHandler.BluetoothSessionListener sessionListener){
@@ -428,14 +428,15 @@ public class BluetoothActivity
      *  bluetooth device before it was connected to this (android) device. Observed in:
      *      - Allflex RFID Stick Reader Model No. RS320-3-60
      *
-     * @param device The device that sent the message
+     * @param device    The device that sent the message
+     * @param message   The message from the bluetooth device
      */
     @Override
-    public void onFirstMessageGotten(final BluetoothDevice device) {
+    public void onFirstMessageGotten(final BluetoothDevice device, final String message) {
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                updateProgressDialog(getResources().getString(R.string.scan_again));
+                updateProgressDialog(getResources().getString(R.string.scan_again)+ " \n " + RFID.process(message));
             }
         });
     }
@@ -526,6 +527,27 @@ public class BluetoothActivity
             public void run() {
                 Log.i(TAG, "Socket connection with " + device.getName() + " closed");
                 //Toast.makeText(BluetoothActivity.this, getResources().getString(R.string.closed_socket_with)+ " " + device.getName(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    /**
+     * This method is called whenever the Bluetooth handler is unable to create or continue with the socket
+     *
+     * @param device    The device on the other end of the socket
+     */
+    @Override
+    public void onSocketCanceled(final BluetoothDevice device) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.w(TAG, "Was unable to start socket with " + device.getName() + " returning nothing to the parent activity");
+                Toast.makeText(BluetoothActivity.this,getString(R.string.unable_to_connect_to_) + " " + device.getName(), Toast.LENGTH_LONG).show();
+
+                Intent intent = new Intent();
+                setResult(RESULT_CANCELED, intent);
+
+                finish();
             }
         });
     }

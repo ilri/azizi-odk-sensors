@@ -319,14 +319,21 @@ public class BluetoothHandler {
 
             tryToConnect();
 
-            sessionListener.onConnected(device);
+            if(bluetoothSocket != null){
+                sessionListener.onConnected(device);
 
-            getData(device, sessionListener);
+                getData(device, sessionListener);
+            }
+            else{
+                Log.w(TAG, "Bluetooth Socket deinitialized from another thread. Cannot get data from it");
+            }
         }
 
         private void tryToConnect() {
             try {
-                bluetoothSocket.connect();//This right here blocks the thread until a connection is gotten or a timeout is reached
+                if(bluetoothSocket != null){//this might be called when the bluetooth socket was set to null from another thread
+                    bluetoothSocket.connect();//This right here blocks the thread until a connection is gotten or a timeout is reached
+                }
             }
             catch (IOException e) {
                 Log.w(TAG, "Was unable to connect to socket with Bluetooth server in AsClientConnectionThread");
@@ -337,15 +344,11 @@ public class BluetoothHandler {
                     tryToConnect();//recurrsive method
                 }
                 else{
-                    try {
-                        if(bluetoothSocket != null){
-                            bluetoothSocket.close();
-                        }
-                    }
-                    catch (IOException closeE){
+                    closeSocket(device, sessionListener);
+                    Log.w(TAG, "Giving up on trying to initialize connection with "+device.getName());
 
-                        Log.e(TAG, "Was unable to close bluetooth socket with Bluetooth server in AsClientConnectionThread");
-                        closeE.printStackTrace();
+                    if(sessionListener != null){
+                        sessionListener.onSocketCanceled(device);
                     }
                 }
             }
@@ -408,9 +411,9 @@ public class BluetoothHandler {
 
             String message = convertStreamToString(bluetoothInputStream);//this method will block the thread until something is gotten
 
-            sessionListener.onActualMessageGotten(device, message);
-
             closeSocket(device, sessionListener);
+
+            sessionListener.onActualMessageGotten(device, message);//this method is called last because code called after it might not be run
         }
 
         /**
@@ -441,7 +444,7 @@ public class BluetoothHandler {
                     String firstScan = reader.readLine();//this line of code blocks the thread until something is returned
                     Log.d(TAG, firstScan);
 
-                    sessionListener.onFirstMessageGotten(device);
+                    sessionListener.onFirstMessageGotten(device, firstScan);
 
                     line = reader.readLine();//Process this string and not firstScan. This line of code also blocks the thread
                     Log.d(TAG, line);
@@ -511,9 +514,10 @@ public class BluetoothHandler {
     public interface BluetoothSessionListener {
         void onConnected(BluetoothDevice device);
         void onSocketOpened(BluetoothDevice device);
-        void onFirstMessageGotten(BluetoothDevice device);
+        void onFirstMessageGotten(BluetoothDevice device, String message);
         void onActualMessageGotten(BluetoothDevice device, String message);
         void onSocketClosed(BluetoothDevice device);
+        void onSocketCanceled(BluetoothDevice device);
     }
 
     /**

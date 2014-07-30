@@ -3,7 +3,8 @@
     android:id="@+id/main_layout_ll"
     android:layout_width="match_parent"
     android:layout_height="70dp"
-    android:background="@color/white"
+    android:paddingLeft="15dp"
+    android:paddingRight="15dp"
     tools:context=".MainActivity">
     <TextView
         android:id="@+id/dialog_text_tv"
@@ -12,5 +13,6 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:textColor="@color/black"
+        android:text="@string/please_wait"
         android:textSize="18dp"/>
 </LinearLayout>
