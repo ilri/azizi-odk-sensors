@@ -31,6 +31,8 @@ public class BluetoothHandler {
     public static final int REQUEST_ENABLE_BT = 3321;
     public static final String KEY = "bluetooth";
 
+    public static final String DEFAULT_BT_MAC_ADDRESS = "0000";
+
     private static final String TAG = "ODK Sensors BluetoothHandler";
 
     private final Activity activity;
@@ -41,6 +43,7 @@ public class BluetoothHandler {
     private BluetoothSocket bluetoothSocket;//There should only be one bluetooth socket open
     private InputStream bluetoothInputStream;//bluetooth socket's input stream
     private OutputStream bluetoothOutputStream;//bluetooth socket's output stream
+
 
     /**
      * The constructor. If you don't know about constructors, well.., take more programming lessons then
@@ -64,15 +67,15 @@ public class BluetoothHandler {
                 if(BluetoothDevice.ACTION_FOUND.equals(action)){
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     availableDevices.add(device);
-                    deviceFoundListener.onDeviceFound(device);
+                    if(deviceFoundListener != null) deviceFoundListener.onDeviceFound(device);
                 }
 
                 else if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
                     availableDevices.clear();
-                    deviceFoundListener.onSearchStart();
+                    if(deviceFoundListener != null) deviceFoundListener.onSearchStart();
                 }
                 else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
-                    deviceFoundListener.onSearchStop();
+                    if(deviceFoundListener != null) deviceFoundListener.onSearchStop();
                 }
             }
         };
@@ -137,7 +140,7 @@ public class BluetoothHandler {
 
         if(isBluetootEnabled()){
             if(device != null){
-                Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+                Set<BluetoothDevice> pairedDevices = getPairedDevices();
                 for(BluetoothDevice currDevice : pairedDevices){
                     if(currDevice.getAddress().equals(device.getAddress())){
                         Log.d(TAG, "The device has already been paired");
@@ -154,6 +157,21 @@ public class BluetoothHandler {
         }
 
         return false;
+    }
+
+    public Set<BluetoothDevice> getPairedDevices() {
+        return bluetoothAdapter.getBondedDevices();
+    }
+
+    public BluetoothDevice getBluetoothDevice(String macAddress) {
+        Set<BluetoothDevice> pairedDevices = getPairedDevices();
+
+        for(BluetoothDevice currDevice : pairedDevices){
+            if(currDevice.getAddress().equals(macAddress)){
+                return currDevice;
+            }
+        }
+        return null;
     }
 
     /**
@@ -256,6 +274,8 @@ public class BluetoothHandler {
         private final BluetoothDevice device;
         private final BluetoothSessionListener sessionListener;
 
+        private int connectionRetries;
+
         /**
          * The constructor.
          *
@@ -266,6 +286,7 @@ public class BluetoothHandler {
             this.device = device;
             this.sessionListener = sessionListener;
             BluetoothSocket tmpSocket = null;
+
 
             try {
                 tmpSocket = device.createRfcommSocketToServiceRecord(getUUID(device));
@@ -280,6 +301,8 @@ public class BluetoothHandler {
 
             bluetoothSocket = tmpSocket;
             sessionListener.onSocketOpened(device);
+
+            connectionRetries = 0;
         }
 
         /**
@@ -294,24 +317,36 @@ public class BluetoothHandler {
 
             stopScan();//Stop scan (in case the user started it again after getDataFromDevice was called)
 
+            tryToConnect();
+
+            sessionListener.onConnected(device);
+
+            getData(device, sessionListener);
+        }
+
+        private void tryToConnect() {
             try {
                 bluetoothSocket.connect();//This right here blocks the thread until a connection is gotten or a timeout is reached
-                sessionListener.onConnected(device);
-
-                getData(device, sessionListener);
             }
-            catch (IOException e){
-                Log.e(TAG, "Was unable to connect to socket with Bluetooth server in AsClientConnectionThread");
-                e.printStackTrace();
+            catch (IOException e) {
+                Log.w(TAG, "Was unable to connect to socket with Bluetooth server in AsClientConnectionThread");
+                connectionRetries++;
 
-                try {
-                    if(bluetoothSocket != null){
-                        bluetoothSocket.close();
-                    }
+                if(connectionRetries < 6){
+                    Log.i(TAG, "Trying for the " + connectionRetries + " time to initialize the bluetooth socket");
+                    tryToConnect();//recurrsive method
                 }
-                catch (IOException closeE){
-                    Log.e(TAG, "Was unable to close bluetooth socket with Bluetooth server in AsClientConnectionThread");
-                    closeE.printStackTrace();
+                else{
+                    try {
+                        if(bluetoothSocket != null){
+                            bluetoothSocket.close();
+                        }
+                    }
+                    catch (IOException closeE){
+
+                        Log.e(TAG, "Was unable to close bluetooth socket with Bluetooth server in AsClientConnectionThread");
+                        closeE.printStackTrace();
+                    }
                 }
             }
         }

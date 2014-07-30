@@ -1,26 +1,33 @@
-<?xml version="2.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.cgiar.ilri.odk.sensors" >
-    
+    package="org.cgiar.ilri.odk.sensors"
+    android:versionCode="2"
+    android:versionName="2.0" >
+
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name"
-        android:theme="@style/DialogTheme" >
+        android:label="@string/app_name" >
         <activity
-            android:name=".MainActivity"
+            android:name=".BluetoothActivity"
+            android:label="@string/app_name"
+            android:theme="@style/DialogTheme" >
+            <intent-filter>
+                <action android:name="org.cgiar.ilri.odk.sensors.action.GET_SENSOR_DATA" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".SettingsActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
-            <intent-filter>
-                <action android:name="org.cgiar.ilri.odk.sensors.action.GET_SENSOR_DATA"/>
-                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>

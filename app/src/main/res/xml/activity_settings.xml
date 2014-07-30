@@ -1,0 +1,16 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:key="bluetooth_pc"
+        android:title="@string/pref_bluetooth"
+        android:enabled="true">
+        <ListPreference
+            android:key="bt_rfid_default_dev_lp"
+            android:title="@string/pref_bt_rfid_default_dev_text"
+            android:summary="@string/pref_bt_rfid_default_dev_summary"
+            android:defaultValue="-1"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
