@@ -317,6 +317,7 @@ public class BluetoothHandler {
 
             stopScan();//Stop scan (in case the user started it again after getDataFromDevice was called)
 
+            connectionRetries = 0;
             tryToConnect();
 
             if(bluetoothSocket != null){
@@ -337,6 +338,13 @@ public class BluetoothHandler {
             }
             catch (IOException e) {
                 Log.w(TAG, "Was unable to connect to socket with Bluetooth server in AsClientConnectionThread");
+
+                try {
+                    Thread.sleep(500);
+                }
+                catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
                 connectionRetries++;
 
                 if(connectionRetries < 6){
@@ -344,6 +352,7 @@ public class BluetoothHandler {
                     tryToConnect();//recurrsive method
                 }
                 else{
+                    connectionRetries = 0;
                     closeSocket(device, sessionListener);
                     Log.w(TAG, "Giving up on trying to initialize connection with "+device.getName());
 
