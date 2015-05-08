@@ -24,7 +24,7 @@ Supported data types include:
 
 *   rfid
 
-observe case sensitivity when defining the variables. Also ensure you append 'ex:' to the intent as specified [here](https://opendatakit.org/help/form-design/external-apps/).
+Observe character case when defining the variables. Also ensure you append 'ex:' to the intent as specified [here](https://opendatakit.org/help/form-design/external-apps/).
 
 ## Building the project
 
