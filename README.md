@@ -1,6 +1,5 @@
-# Azizi ODK Sensors
+# Azizi ODK Sensors [![Build Status](https://travis-ci.org/ilri/azizi-odk-sensors.svg?branch=master)](https://travis-ci.org/ilri/azizi-odk-sensors)
 
-[![Build Status](https://travis-ci.org/ilri/azizi-odk-sensors.svg?branch=master)](https://travis-ci.org/ilri/azizi-odk-sensors)
 This application can be used by ODK Collect to enter data from bluetoot devices into text fields.
 Refer to [ODK External Apps](https://opendatakit.org/help/form-design/external-apps/).
 
