@@ -26,6 +26,8 @@ Supported data types include:
 
 Observe character case when defining the variables. Also ensure you append 'ex:' to the intent as specified [here](https://opendatakit.org/help/form-design/external-apps/).
 
+[sample_form.xls](https://raw.githubusercontent.com/ilri/azizi-odk-sensors/master/sample_form.xls) illustrates how ODK Sensors can be used with ODK Collect.
+
 ### Building the project
 
 To buid this [Gradle](https://gradle.org/) project, run the following commands:
