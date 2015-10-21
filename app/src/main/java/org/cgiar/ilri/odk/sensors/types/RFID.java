@@ -45,7 +45,10 @@ public class RFID {
         if(raw != null){
             raw = raw.replaceAll("\\s+", "");
             if(raw.length()>=15){
-                return raw.substring(raw.length() - 15, raw.length());
+              /**  return raw.substring(raw.length() - 15, raw.length()); */
+              /** testing for RT100 V8 Scanner */
+              return raw;
+              
             }
             else{
                 Log.w(TAG, "The length of the provided RFID string is less than 15 (without the whitespaces). Cannot process this string");
