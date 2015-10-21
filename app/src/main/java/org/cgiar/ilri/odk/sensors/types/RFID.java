@@ -47,7 +47,7 @@ public class RFID {
             if(raw.length()>=15){
               /**  return raw.substring(raw.length() - 15, raw.length()); */
               /** testing for RT100 V8 Scanner */
-              return raw.substring(1, 15);
+              return raw;
               
             }
             else{
