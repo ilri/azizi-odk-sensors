@@ -34,6 +34,7 @@ import android.widget.Toast;
 import org.cgiar.ilri.odk.sensors.handlers.BluetoothHandler;
 import org.cgiar.ilri.odk.sensors.storage.SharedPreferenceManager;
 import org.cgiar.ilri.odk.sensors.types.RFID;
+import org.cgiar.ilri.odk.sensors.types.Type;
 
 import java.util.List;
 
@@ -61,6 +62,7 @@ public class BluetoothActivity
     private TextView dialogTextTV;
 
     private BluetoothHandler bluetoothHandler;
+    private Type type;
 
     private List<String> deviceNames;
     private List<BluetoothDevice> bluetoothDevices;
@@ -91,14 +93,28 @@ public class BluetoothActivity
             if(sensorToUse != null) sensorToUse = sensorToUse.toLowerCase();
 
             returnDataType = bundle.getString(KEY_DATA_TYPE);
-            if(returnDataType != null) returnDataType = returnDataType.toLowerCase();
+            if(returnDataType != null) {
+                returnDataType = returnDataType.toLowerCase();
+                if (returnDataType.equals(RFID.KEY)) {
+                    type = new RFID();
+                }
+            }
 
-            Log.i(TAG, "Gotten data from parent activity");
+
+            Log.i("BluetoothActivity", "Gotten data from parent activity");
         }
         else{
             Log.w(TAG, "Was unable to get data from previous activity. Probably because the activity was called from the launcher");
         }
         Log.i(TAG, "onCreated finished");
+    }
+
+    private String processOutput(String output) {
+        if (type != null) {
+            return type.process(output);
+        }
+
+        return output;
     }
 
     /**
@@ -114,7 +130,7 @@ public class BluetoothActivity
         super.onResume();
 
         if(bluetoothHandler == null) {
-            bluetoothHandler = new BluetoothHandler(this, this);
+            bluetoothHandler = new BluetoothHandler(this, type, this);
         }
         else {
             Log.i(TAG, "Bluetooth Handler is not null, not reinitializing it");
@@ -312,7 +328,7 @@ public class BluetoothActivity
                 Log.d(TAG, "Bluetooth was successfully enabled");
 
                 //Make sure you reinitialize the bluetooth handler because it's null
-                bluetoothHandler = new BluetoothHandler(this, this);
+                bluetoothHandler = new BluetoothHandler(this, type, this);
 
                 startBluetoothSearch();
             }
@@ -453,7 +469,7 @@ public class BluetoothActivity
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                updateProgressDialog(getResources().getString(R.string.scan_again)+ " \n " + RFID.process(message));
+                updateProgressDialog(getResources().getString(R.string.scan_again)+ " \n " + processOutput(message));
             }
         });
     }
@@ -501,18 +517,10 @@ public class BluetoothActivity
                             Refer to http://opendatakit.org/help/form-design/external-apps/
                          */
 
-                        if(returnDataType != null){
-                            if(returnDataType.equals(RFID.KEY)){
-                                String value = RFID.process(message);
-                                intent.putExtra("value", value);
-                                setResult(RESULT_OK, intent);
-                            }
-                            else{
-                                setResult(RESULT_CANCELED, intent);
-
-                                Log.e(TAG, "Was unable to determine the return data type returning nothing");
-                                Toast.makeText(BluetoothActivity.this, BluetoothActivity.this.getResources().getString(R.string.something_wrong_odk), Toast.LENGTH_LONG).show();
-                            }
+                        if(type != null){
+                            String value = processOutput(message);
+                            intent.putExtra("value", value);
+                            setResult(RESULT_OK, intent);
                         }
                         else{
                             setResult(RESULT_CANCELED, intent);

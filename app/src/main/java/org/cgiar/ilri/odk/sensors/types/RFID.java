@@ -24,7 +24,7 @@ import android.util.Log;
  *
  * This class handles any data that is of type RFID
  */
-public class RFID {
+public class RFID extends Type {
 
     private static final String TAG = "ODK Sensors RFID";
 
@@ -41,10 +41,14 @@ public class RFID {
      *
      * @return The processed RFID String
      */
-    public static String process(String raw){
+    @Override
+    public String process(String raw) {
         if(raw != null){
             raw = raw.replaceAll("\\s+", "");
-            if(raw.length()>=15){
+            if (raw.length() == 35) {// Seven digit header, followed by the 15 digit tag number, then a 12 digit timestamp
+                return raw.substring(8, raw.length() - 12);
+            }
+            else if (raw.length()>=15) {
                 return raw.substring(raw.length() - 15, raw.length());
             }
             else{
@@ -56,5 +60,10 @@ public class RFID {
         }
         Log.w(TAG, "Process method returning the original string");
         return raw;
+    }
+
+    @Override
+    public String getName() {
+        return KEY;
     }
 }

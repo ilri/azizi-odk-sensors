@@ -7,6 +7,7 @@ Testing was done using the following devices:
 
 *   DataMars GES3S RFID Reader (Connection to Android device via Bluetooth)
 *   Allflex RS320-3-6 ISO RFID Stick Reader
+*   Allflex RS420-60 Portable Stick Reader
 
 ### Usage
 
