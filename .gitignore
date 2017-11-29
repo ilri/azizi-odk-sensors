@@ -1,9 +1,11 @@
+*.iml
 .gradle
+.idea
 /local.properties
 /.idea/workspace.xml
+/.idea/libraries
 .DS_Store
 /build
-*.swp
-*.apk
-#exclude the release apk
-!app/build/outputs/apk/app-release.apk
+/captures
+.externalNativeBuild
+**/secrets.xml

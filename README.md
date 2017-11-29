@@ -66,7 +66,7 @@ To install the signed application run:
 adb install -r app/build/outputs/apk/app-release.apk
 ```
 
-For your convenience, a signed APK for this project is available [here](https://raw.githubusercontent.com/ilri/azizi-odk-sensors/master/app/build/outputs/apk/app-release.apk)
+For your convenience, a debug APK is available [here](./app/build/outputs/apk/)
 
 ### License
 
