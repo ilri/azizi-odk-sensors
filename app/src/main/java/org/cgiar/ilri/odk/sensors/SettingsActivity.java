@@ -68,7 +68,7 @@ public class SettingsActivity extends PreferenceActivity
 
     private void loadPairedBTDevices() {
         //load the paired bluetooth devices
-        BluetoothHandler bluetoothHandler = new BluetoothHandler(this, null);
+        BluetoothHandler bluetoothHandler = new BluetoothHandler(this, null, null);
         Set<BluetoothDevice> pairedDevices = bluetoothHandler.getPairedDevices();
 
         pairedBTDeviceNames = new ArrayList<CharSequence>();

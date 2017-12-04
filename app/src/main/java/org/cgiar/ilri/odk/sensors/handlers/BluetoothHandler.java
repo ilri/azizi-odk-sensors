@@ -27,6 +27,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
+import org.cgiar.ilri.odk.sensors.types.Type;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +56,7 @@ public class BluetoothHandler {
 
     private final Activity activity;
     private final BluetoothAdapter bluetoothAdapter;
+    private final Type type;// The data type to be gotten using the handler
     private final BroadcastReceiver broadcastReceiver;
     private final List<BluetoothDevice> availableDevices;
     private final DeviceFoundListener deviceFoundListener;
@@ -68,9 +71,10 @@ public class BluetoothHandler {
      *
      * @param activity
      */
-    public BluetoothHandler(Activity activity, final DeviceFoundListener deviceFoundListener){
+    public BluetoothHandler(Activity activity, Type type, final DeviceFoundListener deviceFoundListener){
         this.activity = activity;
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        this.type = type;
 
         availableDevices = new ArrayList<BluetoothDevice>();
 
@@ -467,12 +471,12 @@ public class BluetoothHandler {
                             - Allflex RFID Stick Reader Model No. RS320-3-60
                      */
 
-                    String firstScan = reader.readLine();//this line of code blocks the thread until something is returned
+                    String firstScan = processTypeOutput(reader.readLine());//this line of code blocks the thread until something is returned
                     Log.d(TAG, firstScan);
 
                     sessionListener.onFirstMessageGotten(device, firstScan);
 
-                    line = reader.readLine();//Process this string and not firstScan. This line of code also blocks the thread
+                    line = processTypeOutput(reader.readLine());//Process this string and not firstScan. This line of code also blocks the thread
                     Log.d(TAG, line);
 
                     if(firstScan.equals(line)){
@@ -490,6 +494,14 @@ public class BluetoothHandler {
 
             return null;
         }
+    }
+
+    private String processTypeOutput(String output) {
+        if (type != null) {
+            return type.process(output);
+        }
+
+        return output;
     }
 
     /**
